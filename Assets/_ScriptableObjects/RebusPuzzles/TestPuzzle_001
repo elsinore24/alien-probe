@@ -12,12 +12,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8f731b1548980494b8de80b2b646a500, type: 3}
   m_Name: TestPuzzle_001
   m_EditorClassIdentifier: 
-  puzzleID: 
+  puzzleID: TP001
   rebusImage: {fileID: 0}
-  solution: 
-  letterBank: 
-  correctBanterKey: 
-  incorrectBanterKey: 
+  solution: UNITY
+  letterBank:
+  - U
+  - N
+  - I
+  - T
+  - Y
+  - X
+  - A
+  - B
+  correctBanterKey: Xylar_TP001_Correct
+  incorrectBanterKey: Zorp_TP001_Incorrect
   humanSilhouetteReaction: {fileID: 0}
-  destructionMeterChangeOnCorrect: 0
-  destructionMeterChangeOnIncorrect: 0
+  destructionMeterChangeOnCorrect: -0.05
+  destructionMeterChangeOnIncorrect: 0.02

@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2e76016321f05dc468d1a9aba659d991, type: 3}
   m_Name: Zorp_TP001_Incorrect
   m_EditorClassIdentifier: 
-  dialogueKey: 
-  characterSpeaking: 0
-  dialogueText: 
+  dialogueKey: Zorp_TP001_Incorrect
+  characterSpeaking: 1
+  dialogueText: HA! Wrong again, flesh-bag! My boredom intensifies. Is this the best your species can offer? Pathetic!
   audioClip: {fileID: 0}
-  live2DAnimationTrigger: 
+  live2DAnimationTrigger: Taunt

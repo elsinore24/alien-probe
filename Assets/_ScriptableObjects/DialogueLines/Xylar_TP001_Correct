@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2e76016321f05dc468d1a9aba659d991, type: 3}
   m_Name: Xylar_TP001_Correct
   m_EditorClassIdentifier: 
-  dialogueKey: 
+  dialogueKey: Xylar_TP001_Correct
   characterSpeaking: 0
-  dialogueText: 
+  dialogueText: By my multifaceted eyes! The human actually got one! Perhaps there's a glimmer of... something... in that bulbous cranium.
   audioClip: {fileID: 0}
-  live2DAnimationTrigger: 
+  live2DAnimationTrigger: Pleased

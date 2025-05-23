@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2e76016321f05dc468d1a9aba659d991, type: 3}
   m_Name: Narrator_Intro_001
   m_EditorClassIdentifier: 
-  dialogueKey: 
-  characterSpeaking: 0
-  dialogueText: 
+  dialogueKey: Narrator_Intro_001
+  characterSpeaking: 2
+  dialogueText: On a routine Tuesday, deep in uncharted space, Xylar and Zorp prepared their latest 'cultural exchange' device.
   audioClip: {fileID: 0}
-  live2DAnimationTrigger: 
+  live2DAnimationTrigger: Idle
