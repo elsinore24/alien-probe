@@ -13,17 +13,9 @@ MonoBehaviour:
   m_Name: TestPuzzle_001
   m_EditorClassIdentifier: 
   puzzleID: TP001
-  rebusImage: {fileID: 0}
+  rebusImage: {fileID: 7482667652216324306, guid: d367079b450ffef48b82144d6aba7e38, type: 3}
   solution: UNITY
-  letterBank:
-  - U
-  - N
-  - I
-  - T
-  - Y
-  - X
-  - A
-  - B
+  letterBank: 00000000000000000000000000000000
   correctBanterKey: Xylar_TP001_Correct
   incorrectBanterKey: Zorp_TP001_Incorrect
   humanSilhouetteReaction: {fileID: 0}
