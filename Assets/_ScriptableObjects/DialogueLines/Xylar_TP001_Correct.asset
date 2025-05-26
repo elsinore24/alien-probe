@@ -16,4 +16,4 @@ MonoBehaviour:
   characterSpeaking: 0
   dialogueText: By my multifaceted eyes! The human actually got one! Perhaps there's a glimmer of... something... in that bulbous cranium.
   audioClip: {fileID: 0}
-  live2DAnimationTrigger: Pleased
+  live2DAnimationTrigger: face01

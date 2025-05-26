@@ -1,5 +1,5 @@
 using UnityEngine;
-using System.Collections.Generic; // For List if you choose it over array
+using System.Collections.Generic; // Still needed for DialogueLineData lists
 
 [CreateAssetMenu(fileName = "NewRebusPuzzle", menuName = "Alien Probe/Rebus Puzzle Data")]
 public class RebusPuzzleData : ScriptableObject
@@ -7,10 +7,19 @@ public class RebusPuzzleData : ScriptableObject
     public string puzzleID; // Unique identifier for this puzzle
     public Sprite rebusImage; // The visual rebus image
     public string solution; // The correct answer string
-    public List<char> letterBank; // Available letters for the player
-    // Or: public char[] letterBank;
+    
+    // MODIFIED LINE BELOW: Changed from List<char> to string
+    [Tooltip("A single string containing all available letters for the player (e.g., \"UYNITTES\").")]
+    public string letterBank; // Available letters for the player as a single string
 
-    [Header("Banter Keys")]
+    [Header("Dialogue Feedback")]
+    [Tooltip("Dialogue sequence to play when player answers correctly.")]
+    public List<DialogueLineData> CorrectDialogue; // Direct dialogue for correct answers
+    
+    [Tooltip("Dialogue sequence to play when player answers incorrectly.")]
+    public List<DialogueLineData> IncorrectDialogue; // Direct dialogue for incorrect answers
+
+    [Header("Banter Keys (Legacy)")]
     public string correctBanterKey; // Key to find correct dialogue line
     public string incorrectBanterKey; // Key to find incorrect dialogue line
 

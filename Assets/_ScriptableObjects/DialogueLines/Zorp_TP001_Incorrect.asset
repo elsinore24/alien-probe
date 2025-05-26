@@ -16,4 +16,4 @@ MonoBehaviour:
   characterSpeaking: 1
   dialogueText: HA! Wrong again, flesh-bag! My boredom intensifies. Is this the best your species can offer? Pathetic!
   audioClip: {fileID: 0}
-  live2DAnimationTrigger: Taunt
+  live2DAnimationTrigger: face02

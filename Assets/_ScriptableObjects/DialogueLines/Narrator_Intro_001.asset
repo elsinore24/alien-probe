@@ -16,4 +16,4 @@ MonoBehaviour:
   characterSpeaking: 2
   dialogueText: On a routine Tuesday, deep in uncharted space, Xylar and Zorp prepared their latest 'cultural exchange' device.
   audioClip: {fileID: 0}
-  live2DAnimationTrigger: Idle
+  live2DAnimationTrigger: body
