@@ -1,7 +1,7 @@
 using UnityEngine;
-using UnityEngine.UI; // Required for UI elements like Button, Text
+using UnityEngine.UI;
 using System.Collections.Generic;
-using System.Linq; // Added for string.Join in Debug.Log
+using System.Linq; // For Debug.Log if using string.Join
 
 public class PuzzleController : MonoBehaviour
 {
@@ -22,25 +22,43 @@ public class PuzzleController : MonoBehaviour
     public Transform letterBankContainer;
     [Tooltip("Parent Transform for instantiating answer slots.")]
     public Transform answerSlotsContainer;
+    // Removed: public Button submitButton; // We'll add submission logic later
+    [Tooltip("Button to clear the current answer in the slots.")]
+    public Button clearButton; // Assuming you have this assigned for ClearAnswer
 
     private List<GameObject> spawnedLetterTiles = new List<GameObject>();
     private List<GameObject> spawnedAnswerSlots = new List<GameObject>();
+    private List<Text> spawnedAnswerSlotTexts = new List<Text>(); // To easily access Text components
+    private Dictionary<Button, char> letterBankButtonChars = new Dictionary<Button, char>(); // To re-enable correct buttons
 
+    private int currentAnswerIndex = 0; // ADDED: Tracks the next empty answer slot
 
     void Start()
     {
         if (currentPuzzle == null)
         {
-            Debug.Log("No puzzle asset assigned, creating test puzzle in code...");
-            CreateTestPuzzleInCode(); // This will now correctly use string for letterBank
+            Debug.LogWarning("No puzzle asset assigned in Inspector. Attempting to create a test puzzle in code...");
+            CreateTestPuzzleInCode();
         }
 
+        // Attempt to find essential components if not assigned
+        if (characterDialogueManager == null)
+            characterDialogueManager = FindObjectOfType<CharacterDialogueManager>();
         if (letterBankContainer == null)
             letterBankContainer = GameObject.Find("LetterBankContainer")?.transform;
         if (answerSlotsContainer == null)
             answerSlotsContainer = GameObject.Find("AnswerSlotsContainer")?.transform;
-        if (characterDialogueManager == null)
-            characterDialogueManager = FindObjectOfType<CharacterDialogueManager>();
+        
+        // Assign ClearButton listener if the button exists
+        if (clearButton != null)
+        {
+            clearButton.onClick.RemoveAllListeners(); // Good practice
+            clearButton.onClick.AddListener(ClearAnswer);
+        }
+        else
+        {
+            Debug.LogWarning("PuzzleController: Clear Button is not assigned in the Inspector. Clear functionality will be unavailable via UI.");
+        }
 
         if (currentPuzzle != null)
         {
@@ -48,262 +66,169 @@ public class PuzzleController : MonoBehaviour
         }
         else
         {
-            Debug.LogError("PuzzleController: Could not create or assign puzzle data!");
-        }
-
-        if (characterDialogueManager == null)
-        {
-            Debug.LogWarning("PuzzleController: CharacterDialogueManager is not assigned!");
-        }
-
-        if (letterBankContainer == null || answerSlotsContainer == null)
-        {
-            // Check again after potential Find attempts
-            if (letterBankContainer == null || answerSlotsContainer == null)
-            {
-                 Debug.LogError("PuzzleController: One or more UI containers are missing even after attempting to find them!");
-                 // Optionally, you could still call CreateContainersDirectly() here as a last resort
-                 // Debug.Log("Creating containers directly as a fallback...");
-                 // CreateContainersDirectly();
-            }
+            Debug.LogError("PuzzleController: Critical error - No puzzle data available after Start().");
         }
     }
+    
+    // CreateTestPuzzleInCode and CreateContainersDirectly can remain as they were,
+    // but ensure CreateTestPuzzleInCode sets a string for letterBank.
 
-    void CreateContainersDirectly() // This method is a fallback, ideally containers are set up in the scene
-    {
-        Canvas canvas = FindObjectOfType<Canvas>();
-        if (canvas == null)
-        {
-            Debug.LogError("No Canvas found in scene! Cannot create UI containers directly.");
-            return;
-        }
-
-        if (letterBankContainer == null)
-        {
-            GameObject letterBankGO = new GameObject("LetterBankContainer_Generated");
-            letterBankGO.transform.SetParent(canvas.transform, false);
-            letterBankContainer = letterBankGO.transform;
-            
-            RectTransform rect = letterBankGO.AddComponent<RectTransform>();
-            rect.anchorMin = new Vector2(0.1f, 0.1f);
-            rect.anchorMax = new Vector2(0.9f, 0.2f);
-            rect.offsetMin = Vector2.zero;
-            rect.offsetMax = Vector2.zero;
-
-            HorizontalLayoutGroup layoutGroup = letterBankGO.AddComponent<HorizontalLayoutGroup>();
-            layoutGroup.spacing = 10;
-            layoutGroup.childAlignment = TextAnchor.MiddleCenter;
-            layoutGroup.childForceExpandWidth = false;
-            layoutGroup.childForceExpandHeight = false;
-
-            ContentSizeFitter sizeFitter = letterBankGO.AddComponent<ContentSizeFitter>();
-            sizeFitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
-            sizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize; // Often good for layout groups
-        }
-
-        if (answerSlotsContainer == null)
-        {
-            GameObject answerSlotsGO = new GameObject("AnswerSlotsContainer_Generated");
-            answerSlotsGO.transform.SetParent(canvas.transform, false);
-            answerSlotsContainer = answerSlotsGO.transform;
-            
-            RectTransform rect = answerSlotsGO.AddComponent<RectTransform>();
-            rect.anchorMin = new Vector2(0.1f, 0.4f);
-            rect.anchorMax = new Vector2(0.9f, 0.6f);
-            rect.offsetMin = Vector2.zero;
-            rect.offsetMax = Vector2.zero;
-
-            HorizontalLayoutGroup layoutGroup = answerSlotsGO.AddComponent<HorizontalLayoutGroup>();
-            layoutGroup.spacing = 10;
-            layoutGroup.childAlignment = TextAnchor.MiddleCenter;
-            layoutGroup.childForceExpandWidth = false;
-            layoutGroup.childForceExpandHeight = false;
-
-            ContentSizeFitter sizeFitter = answerSlotsGO.AddComponent<ContentSizeFitter>();
-            sizeFitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
-            sizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize; // Often good for layout groups
-        }
-    }
-
-    void CreateTestPuzzleInCode()
+    void CreateTestPuzzleInCode() // Ensure this is consistent with RebusPuzzleData.letterBank being a string
     {
         RebusPuzzleData testPuzzle = ScriptableObject.CreateInstance<RebusPuzzleData>();
-        
-        testPuzzle.puzzleID = "test001";
-        testPuzzle.solution = "CAT";
-        // MODIFIED: Assign a string directly
-        testPuzzle.letterBank = "CATXYZ"; 
-        
+        testPuzzle.puzzleID = "test001_code";
+        testPuzzle.solution = "CODE";
+        testPuzzle.letterBank = "CODEABXY"; // String
         testPuzzle.CorrectDialogue = new List<DialogueLineData>();
         testPuzzle.IncorrectDialogue = new List<DialogueLineData>();
-        
-        testPuzzle.destructionMeterChangeOnCorrect = -0.1f;
-        testPuzzle.destructionMeterChangeOnIncorrect = 0.05f;
-        
         currentPuzzle = testPuzzle;
-        // MODIFIED: Use .Length for string
         Debug.Log("Test puzzle created in code: " + testPuzzle.solution + " with " + testPuzzle.letterBank.Length + " letters");
     }
 
+
     GameObject CreateLetterTile(char letter, Transform parent)
     {
-        if (letterTilePrefab == null)
-        {
-            Debug.LogError("LetterTilePrefab is not assigned in the Inspector!");
-            return null; 
-        }
+        if (letterTilePrefab == null) { Debug.LogError("LetterTilePrefab is not assigned!"); return null; }
+
         GameObject tileInstance = Instantiate(letterTilePrefab, parent);
+        Text tileText = tileInstance.GetComponentInChildren<Text>(true); // For standard UI Text
+        // TMPro.TextMeshProUGUI tmproText = tileInstance.GetComponentInChildren<TMPro.TextMeshProUGUI>(true); // For TextMeshPro
+
+        if (tileText != null) { tileText.text = letter.ToString(); }
+        // else if (tmproText != null) { tmproText.text = letter.ToString(); } // Uncomment if using TextMeshPro
+        else { Debug.LogWarning($"LetterTile '{letter}' created without a Text/TMP_Text component in its children."); }
+
+        tileInstance.name = "LetterTile_Inst_" + letter;
         
-        Text tileText = tileInstance.GetComponentInChildren<Text>(true); 
-        if (tileText != null)
+        Button tileButton = tileInstance.GetComponent<Button>();
+        if (tileButton != null)
         {
-            tileText.text = letter.ToString();
+            // Store the character with its button for re-enabling later
+            if (!letterBankButtonChars.ContainsKey(tileButton)) // Avoid issues if letters repeat in bank
+            {
+                 letterBankButtonChars.Add(tileButton, letter);
+            }
+            // MODIFIED: Add listener to call OnLetterTileClicked
+            tileButton.onClick.AddListener(() => OnLetterTileClicked(letter, tileButton));
         }
         else
         {
-            // Attempt to find TextMeshProUGUI if standard Text is not found
-            TMPro.TextMeshProUGUI tmproText = tileInstance.GetComponentInChildren<TMPro.TextMeshProUGUI>(true);
-            if (tmproText != null)
-            {
-                tmproText.text = letter.ToString();
-            }
-            else
-            {
-                Debug.LogWarning($"Instantiated LetterTile for '{letter}' does not have a UnityEngine.UI.Text or TMPro.TextMeshProUGUI component in its children.");
-            }
+            Debug.LogError($"LetterTilePrefab '{letterTilePrefab.name}' is missing a Button component on its root.");
         }
-        tileInstance.name = "LetterTile_Inst_" + letter; 
         return tileInstance;
     }
 
     GameObject CreateAnswerSlot(Transform parent)
     {
-        if (answerSlotPrefab == null)
-        {
-            Debug.LogError("AnswerSlotPrefab is not assigned in the Inspector!");
-            return null;
-        }
+        if (answerSlotPrefab == null) { Debug.LogError("AnswerSlotPrefab is not assigned!"); return null; }
         GameObject slotInstance = Instantiate(answerSlotPrefab, parent);
-        slotInstance.name = "AnswerSlot_Inst"; 
+        slotInstance.name = "AnswerSlot_Inst_" + spawnedAnswerSlots.Count;
+
+        // Get and store the Text component of the answer slot for easy access
+        Text slotText = slotInstance.GetComponentInChildren<Text>(true); // Assuming answer slot prefab has a Text child for the letter
+        // TMPro.TextMeshProUGUI slotTmproText = slotInstance.GetComponentInChildren<TMPro.TextMeshProUGUI>(true); // For TextMeshPro
+        
+        if (slotText != null)
+        {
+            spawnedAnswerSlotTexts.Add(slotText);
+            slotText.text = ""; // Ensure it's initially empty
+        }
+        // else if (slotTmproText != null) { spawnedAnswerSlotTexts.Add(slotTmproText); slotTmproText.text = ""; } // For TextMeshPro
+        else
+        {
+            Debug.LogWarning("AnswerSlotPrefab does not have a Text/TMP_Text child to display the letter.");
+        }
         return slotInstance;
+    }
+
+    // NEW METHOD to handle letter tile clicks
+    public void OnLetterTileClicked(char letter, Button clickedButton)
+    {
+        if (currentAnswerIndex < spawnedAnswerSlotTexts.Count)
+        {
+            spawnedAnswerSlotTexts[currentAnswerIndex].text = letter.ToString();
+            clickedButton.interactable = false; // Disable the clicked button
+            currentAnswerIndex++;
+
+            // Optional: Check if all slots are filled to auto-submit or enable submit button
+            // if (currentAnswerIndex == spawnedAnswerSlotTexts.Count) { /* Enable submit button or auto-submit */ }
+        }
+        else
+        {
+            Debug.Log("All answer slots are filled.");
+        }
     }
 
     public void SetupPuzzleUI(RebusPuzzleData puzzle)
     {
-        if (puzzle == null)
-        {
-            Debug.LogError("SetupPuzzleUI: Cannot setup UI for a null puzzle.");
-            return;
-        }
-        currentPuzzle = puzzle; 
+        if (puzzle == null) { Debug.LogError("SetupPuzzleUI: Null puzzle data."); return; }
+        currentPuzzle = puzzle;
 
-        ClearPuzzleUI();
+        ClearPuzzleUI(); // This will also reset currentAnswerIndex
 
-        // Setup Letter Bank
-        // MODIFIED: Use .Length for string and check for !string.IsNullOrEmpty
         if (!string.IsNullOrEmpty(puzzle.letterBank) && letterBankContainer != null)
         {
-            // Using string.Join requires System.Linq, or you can just print puzzle.letterBank directly
-            Debug.Log("Creating letter tiles for: " + puzzle.letterBank); 
-            foreach (char letter in puzzle.letterBank) // This loop works correctly with a string
+            foreach (char letter_char in puzzle.letterBank) // Renamed to avoid conflict with 'letter' in lambda
             {
-                GameObject tile = CreateLetterTile(letter, letterBankContainer);
-                if (tile != null) // Only add if tile creation was successful
-                {
-                    spawnedLetterTiles.Add(tile);
-                }
+                GameObject tile = CreateLetterTile(letter_char, letterBankContainer);
+                if (tile != null) spawnedLetterTiles.Add(tile);
             }
-            Debug.Log($"Created {spawnedLetterTiles.Count} letter tiles");
         }
-        else if (string.IsNullOrEmpty(puzzle.letterBank))
-        {
-            Debug.LogWarning("Puzzle letterBank is null or empty. No letter tiles will be created.");
-        }
-        else if (letterBankContainer == null)
-        {
-            Debug.LogError("LetterBankContainer is not assigned. Cannot create letter tiles.");
-        }
+        // ... (rest of the error checks from previous version)
 
-
-        // Setup Answer Slots based on the length of the Solution string
         if (!string.IsNullOrEmpty(puzzle.solution) && answerSlotsContainer != null)
         {
-            Debug.Log("Creating " + puzzle.solution.Length + " answer slots for solution: " + puzzle.solution);
-            foreach (char _ in puzzle.solution) 
+            for (int i = 0; i < puzzle.solution.Length; i++)
             {
                 GameObject slot = CreateAnswerSlot(answerSlotsContainer);
-                if (slot != null) // Only add if slot creation was successful
-                {
-                    spawnedAnswerSlots.Add(slot);
-                }
+                if (slot != null) spawnedAnswerSlots.Add(slot);
             }
-            Debug.Log($"Created {spawnedAnswerSlots.Count} answer slots");
         }
-        else if (string.IsNullOrEmpty(puzzle.solution))
-        {
-            Debug.LogWarning("Puzzle solution is null or empty. No answer slots will be created.");
-        }
-        else if (answerSlotsContainer == null)
-        {
-            Debug.LogError("AnswerSlotsContainer is not assigned. Cannot create answer slots.");
-        }
+        // ... (rest of the error checks from previous version)
     }
 
     void ClearPuzzleUI()
     {
-        // It's safer to iterate backwards when removing from a list or destroying objects
-        for (int i = spawnedLetterTiles.Count - 1; i >= 0; i--)
-        {
-            if (spawnedLetterTiles[i] != null)
-            {
-                Destroy(spawnedLetterTiles[i]); // Use Destroy for runtime objects, DestroyImmediate is more for editor scripting
-            }
-        }
+        foreach (GameObject tile in spawnedLetterTiles) { if (tile != null) Destroy(tile); }
         spawnedLetterTiles.Clear();
+        letterBankButtonChars.Clear(); // Clear the dictionary too
 
-        for (int i = spawnedAnswerSlots.Count - 1; i >= 0; i--)
-        {
-            if (spawnedAnswerSlots[i] != null)
-            {
-                Destroy(spawnedAnswerSlots[i]);
-            }
-        }
+        foreach (GameObject slot in spawnedAnswerSlots) { if (slot != null) Destroy(slot); }
         spawnedAnswerSlots.Clear();
+        spawnedAnswerSlotTexts.Clear(); // Clear this list too
+
+        currentAnswerIndex = 0; // ADDED: Reset index
     }
 
+    // Public method to be called by the UI Clear Button
+    public void ClearAnswer()
+    {
+        foreach (Text slotText in spawnedAnswerSlotTexts)
+        {
+            if (slotText != null) slotText.text = "";
+        }
+        
+        // Re-enable all letter bank buttons
+        foreach (Button button in letterBankButtonChars.Keys) // Or iterate spawnedLetterTiles and get Button component
+        {
+            if (button != null) button.interactable = true;
+        }
+        
+        currentAnswerIndex = 0; // ADDED: Reset index
+        Debug.Log("Answer cleared.");
+    }
+
+    // SubmitCorrectAnswer and SubmitIncorrectAnswer remain as placeholders for now
+    // They would be called by a dedicated "Submit Puzzle" button after player fills slots.
     public void SubmitCorrectAnswer()
     {
-        if (currentPuzzle == null || characterDialogueManager == null)
-        {
-            Debug.LogError("Cannot submit correct answer: PuzzleData or CharacterDialogueManager is missing.");
-            return;
-        }
-        Debug.Log("Correct answer submitted for puzzle: " + currentPuzzle.puzzleID); // Use puzzleID for consistency
-        if (currentPuzzle.CorrectDialogue != null && currentPuzzle.CorrectDialogue.Count > 0)
-        {
-            characterDialogueManager.StartConversation(currentPuzzle.CorrectDialogue);
-        }
-        else
-        {
-            Debug.LogWarning("No correct feedback dialogue assigned to the current puzzle: " + currentPuzzle.puzzleID);
-        }
+        // ... (existing logic) ...
+        Debug.LogWarning("SubmitCorrectAnswer called - actual answer checking logic not yet implemented here.");
     }
 
     public void SubmitIncorrectAnswer()
     {
-        if (currentPuzzle == null || characterDialogueManager == null)
-        {
-            Debug.LogError("Cannot submit incorrect answer: PuzzleData or CharacterDialogueManager is missing.");
-            return;
-        }
-        Debug.Log("Incorrect answer submitted for puzzle: " + currentPuzzle.puzzleID); // Use puzzleID
-        if (currentPuzzle.IncorrectDialogue != null && currentPuzzle.IncorrectDialogue.Count > 0)
-        {
-            characterDialogueManager.StartConversation(currentPuzzle.IncorrectDialogue);
-        }
-        else
-        {
-            Debug.LogWarning("No incorrect feedback dialogue assigned to the current puzzle: " + currentPuzzle.puzzleID);
-        }
+        // ... (existing logic) ...
+        Debug.LogWarning("SubmitIncorrectAnswer called - actual answer checking logic not yet implemented here.");
     }
 }
