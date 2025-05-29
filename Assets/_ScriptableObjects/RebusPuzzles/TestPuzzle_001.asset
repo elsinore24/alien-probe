@@ -13,15 +13,15 @@ MonoBehaviour:
   m_Name: TestPuzzle_001
   m_EditorClassIdentifier: 
   puzzleID: TP001
-  rebusImage: {fileID: 7482667652216324306, guid: d367079b450ffef48b82144d6aba7e38, type: 3}
+  rebusImage: {fileID: -6470460504253458178, guid: 702b87e72ddbd0648917bf21bb811978, type: 3}
   solution: UNITY
-  letterBank: 00000000000000000000000000000000
+  letterBank: UCINEYTWIYWV
   CorrectDialogue:
   - {fileID: 11400000, guid: e49d7abfa2a16b74abb3c42729b9a776, type: 2}
   IncorrectDialogue:
   - {fileID: 11400000, guid: fc5734040b2afd2499218eda789a7ce0, type: 2}
   correctBanterKey: Xylar_TP001_Correct
   incorrectBanterKey: Zorp_TP001_Incorrect
-  humanSilhouetteReaction: {fileID: 0}
+  humanSilhouetteReaction: {fileID: -5229027436250364075, guid: b2f73228e68d56141b8a3cacf21a96f4, type: 3}
   destructionMeterChangeOnCorrect: -0.05
   destructionMeterChangeOnIncorrect: 0.02
