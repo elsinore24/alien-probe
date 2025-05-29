@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: b2f73228e68d56141b8a3cacf21a96f4
+guid: 347ad288227acef408b8aca9d56a28a3
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -5229027436250364075
-    second: tom_hanks-removebg-preview_0
+      213: -4132532618582403662
+    second: 1 side viewspaceship interior wall cartoonish_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -126,13 +126,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: tom_hanks-removebg-preview_0
+      name: 1 side viewspaceship interior wall cartoonish_0
       rect:
         serializedVersion: 2
-        x: 227
+        x: 0
         y: 0
-        width: 188
-        height: 460
+        width: 1408
+        height: 768
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -141,8 +141,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 55786855043ce67b0800000000000000
-      internalID: -5229027436250364075
+      spriteID: 2b55eae7a7b46a6c0800000000000000
+      internalID: -4132532618582403662
       vertices: []
       indices: 
       edges: []
@@ -161,7 +161,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      tom_hanks-removebg-preview_0: -5229027436250364075
+      1 side viewspaceship interior wall cartoonish_0: -4132532618582403662
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

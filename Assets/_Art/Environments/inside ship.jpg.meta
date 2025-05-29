@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: b2f73228e68d56141b8a3cacf21a96f4
+guid: ea1173c7d5703f94189b6d164c4384e6
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -5229027436250364075
-    second: tom_hanks-removebg-preview_0
+      213: -432770145869690073
+    second: inside ship_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -126,13 +126,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: tom_hanks-removebg-preview_0
+      name: inside ship_0
       rect:
         serializedVersion: 2
-        x: 227
+        x: 0
         y: 0
-        width: 188
-        height: 460
+        width: 1408
+        height: 768
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -141,8 +141,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 55786855043ce67b0800000000000000
-      internalID: -5229027436250364075
+      spriteID: 72b0b0268dd7ef9f0800000000000000
+      internalID: -432770145869690073
       vertices: []
       indices: 
       edges: []
@@ -161,7 +161,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      tom_hanks-removebg-preview_0: -5229027436250364075
+      inside ship_0: -432770145869690073
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

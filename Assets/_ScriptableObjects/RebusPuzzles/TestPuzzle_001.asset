@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: TestPuzzle_001
   m_EditorClassIdentifier: 
   puzzleID: TP001
-  rebusImage: {fileID: -6470460504253458178, guid: 702b87e72ddbd0648917bf21bb811978, type: 3}
+  rebusImage: {fileID: 21300000, guid: 702b87e72ddbd0648917bf21bb811978, type: 3}
   solution: UNITY
   letterBank: UCINEYTWIYWV
   CorrectDialogue:
