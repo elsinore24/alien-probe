@@ -52,12 +52,8 @@ public class PuzzleController : MonoBehaviour
     void Start()
     {
         Debug.Log("PuzzleController Start() called");
-        if (currentPuzzle == null)
-        {
-            Debug.LogWarning("No puzzle asset assigned in Inspector. Attempting to create a test puzzle in code...");
-            CreateTestPuzzleInCode();
-        }
-
+        
+        // Initialize references
         if (characterDialogueManager == null)
             characterDialogueManager = FindFirstObjectByType<CharacterDialogueManager>();
         if (letterBankContainer == null)
@@ -65,6 +61,7 @@ public class PuzzleController : MonoBehaviour
         if (answerSlotsContainer == null)
             answerSlotsContainer = GameObject.Find("AnswerSlotsContainer")?.transform;
         
+        // Setup button listeners
         if (clearButton != null)
         {
             clearButton.onClick.RemoveAllListeners();
@@ -76,7 +73,6 @@ public class PuzzleController : MonoBehaviour
             Debug.LogWarning("PuzzleController: Clear Button is not assigned in the Inspector. Clear functionality will be unavailable via UI.");
         }
 
-        // ADDED: Assign listener for the new Submit Answer Button
         if (submitAnswerButton != null)
         {
             submitAnswerButton.onClick.RemoveAllListeners();
@@ -88,14 +84,8 @@ public class PuzzleController : MonoBehaviour
             Debug.LogError("PuzzleController: Submit Answer Button is not assigned in the Inspector!");
         }
 
-        if (currentPuzzle != null)
-        {
-            StartCoroutine(SetupPuzzleUISequence(currentPuzzle));
-        }
-        else
-        {
-            Debug.LogError("PuzzleController: Critical error - No puzzle data available after Start().");
-        }
+        // LevelManager will now control puzzle loading, so we don't setup puzzles here
+        Debug.Log("PuzzleController initialized. Waiting for LevelManager to provide puzzles...");
     }
 
     void CreateTestPuzzleInCode()
@@ -401,6 +391,7 @@ public class PuzzleController : MonoBehaviour
     {
         if (currentPuzzle == null || characterDialogueManager == null) return;
         Debug.Log("Correct answer submitted for puzzle: " + currentPuzzle.name);
+        
         if (currentPuzzle.CorrectDialogue != null && currentPuzzle.CorrectDialogue.Count > 0)
         {
             characterDialogueManager.StartConversation(currentPuzzle.CorrectDialogue);
@@ -409,12 +400,18 @@ public class PuzzleController : MonoBehaviour
         {
             Debug.LogWarning("No correct feedback dialogue assigned.");
         }
+        
+        if (LevelManager.Instance != null)
+        {
+            LevelManager.Instance.OnPuzzleCompleted(true);
+        }
     }
 
     public void SubmitIncorrectAnswer()
     {
         if (currentPuzzle == null || characterDialogueManager == null) return;
         Debug.Log("Incorrect answer submitted for puzzle: " + currentPuzzle.name);
+        
         if (currentPuzzle.IncorrectDialogue != null && currentPuzzle.IncorrectDialogue.Count > 0)
         {
             characterDialogueManager.StartConversation(currentPuzzle.IncorrectDialogue);
@@ -423,5 +420,23 @@ public class PuzzleController : MonoBehaviour
         {
             Debug.LogWarning("No incorrect feedback dialogue assigned.");
         }
+        
+        if (LevelManager.Instance != null)
+        {
+            LevelManager.Instance.OnPuzzleCompleted(false);
+        }
+    }
+    
+    public void LoadPuzzleFromLevelManager(RebusPuzzleData puzzle)
+    {
+        if (puzzle == null) 
+        { 
+            Debug.LogError("LoadPuzzleFromLevelManager: Received null puzzle data from LevelManager"); 
+            return; 
+        }
+        
+        Debug.Log($"PuzzleController: Received puzzle {puzzle.puzzleID} from LevelManager");
+        currentPuzzle = puzzle;
+        StartCoroutine(SetupPuzzleUISequence(puzzle));
     }
 }

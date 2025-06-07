@@ -9,6 +9,23 @@
 
 **Core Concept**: Aliens Zorp and Xylar study human intelligence through rebus puzzles to determine if Earth should be destroyed. Players must prove human worth by solving visual word puzzles while experiencing hilarious alien commentary.
 
+## 📅 Development Status (Updated: June 2025)
+
+### ✅ **Implemented & Working:**
+- **Core Puzzle Mechanics**: Multi-stage puzzle presentation (Standby → Silhouette → Rebus)
+- **Character Animation System**: Zorp (penguin sprite) and Xylar (Live2D) with synchronized dialogue
+- **Level Manager System**: Automatic progression, destruction meter, alien relationship tracking
+- **Game Status UI**: Real-time destruction meter and alien relationship displays
+- **Save/Load System**: Persistent progress between game sessions
+- **Multiple Dialogue Responses**: Varied character reactions with different animations
+- **Debug Tools**: Level Manager Editor for testing and progression control
+
+### 🚧 **In Development:**
+- **Additional Puzzle Content**: More rebus puzzles for each category
+- **Audio System**: Character voice acting and sound effects
+- **Advanced UI Polish**: Enhanced visual feedback and animations
+- **Multiple Endings**: Different conclusion scenarios based on performance
+
 ## 🌍 Core Game Loop
 
 1. **Puzzle Presentation**: Multi-stage reveal (Standby → Silhouette → Rebus)
@@ -149,37 +166,164 @@ Each level tests different humans (different silhouettes):
 
 ## 🔧 Technical Implementation
 
-### **Puzzle Data Structure**
-```
-RebusPuzzleData:
-- puzzleID: Unique identifier
-- rebusImage: Visual puzzle sprite
-- solution: Correct answer string
-- letterBank: Available letters (solution + distractors)
-- CorrectDialogue: List of positive response dialogues
-- IncorrectDialogue: List of negative response dialogues
-- humanSilhouetteForPuzzle: Human silhouette sprite
-- destructionMeterChangeOnCorrect: Meter adjustment value
-- destructionMeterChangeOnIncorrect: Meter adjustment value
+### **Core Architecture (Implemented)**
+
+#### **LevelManager.cs**
+```csharp
+// Singleton pattern for global game state management
+public class LevelManager : MonoBehaviour
+{
+    // Puzzle progression
+    public List<RebusPuzzleData> allPuzzles;
+    public int currentLevelIndex = 0;
+    
+    // Game state tracking
+    public float destructionMeter = 50f;
+    public float zorpRespectMeter = 0f;
+    public float xylarCuriosityMeter = 25f;
+    
+    // Automatic progression with 3-second delay
+    public void OnPuzzleCompleted(bool wasCorrect) {
+        // Update meters, check end conditions
+        StartCoroutine(TransitionToNextLevel());
+    }
+}
 ```
 
-### **Dialogue System**
-```
-DialogueLineData:
-- characterSpeaking: Which alien responds
-- dialogueText: What they say
-- live2DAnimationTrigger: Animation to play
-- audioClip: Voice acting (future)
+#### **PuzzleController.cs**
+```csharp
+// Handles puzzle presentation and player interaction
+public class PuzzleController : MonoBehaviour
+{
+    // Multi-stage puzzle sequence
+    private IEnumerator SetupPuzzleUISequence(RebusPuzzleData puzzle)
+    {
+        // Stage 1: Standby (2s) → Stage 2: Silhouette (3s) → Stage 3: Rebus + UI
+        yield return new WaitForSeconds(standbyDuration);
+        // Show silhouette, then reveal puzzle
+    }
+    
+    // Integration with LevelManager
+    public void LoadPuzzleFromLevelManager(RebusPuzzleData puzzle) {
+        StartCoroutine(SetupPuzzleUISequence(puzzle));
+    }
+}
 ```
 
-### **Level Progression**
+#### **CharacterDialogueManager.cs**
+```csharp
+// Synchronized dialogue and animation system
+public class CharacterDialogueManager : MonoBehaviour
+{
+    // Multi-character support
+    public Animator zorpAnimator;   // Penguin sprite animations
+    public Animator xylarAnimator;  // Live2D animations
+    
+    // Dynamic animation triggering
+    Animator targetAnimator = GetAnimatorForSpeaker(dialogueLine.characterSpeaking);
+    targetAnimator.SetTrigger(dialogueLine.live2DAnimationTrigger);
+}
 ```
-LevelManager:
-- currentLevel: Track progress
-- puzzleQueue: Ordered list of puzzles
-- destructionMeter: Current Earth threat level
-- alienRelationships: Zorp/Xylar relationship values
-- unlockedContent: Bonus materials, secret levels
+
+#### **GameStatusUI.cs**
+```csharp
+// Real-time game state visualization
+public class GameStatusUI : MonoBehaviour
+{
+    // Animated meters with color-coding
+    public Slider destructionMeterSlider;
+    public Slider zorpRespectSlider;
+    public Slider xylarCuriositySlider;
+    
+    // Smooth interpolation for visual appeal
+    currentDestructionValue = Mathf.Lerp(currentValue, targetValue, deltaTime);
+}
+```
+
+### **Data Structures (Implemented)**
+
+#### **RebusPuzzleData.cs**
+```csharp
+[CreateAssetMenu(fileName = "NewPuzzle", menuName = "Alien Probe/Rebus Puzzle")]
+public class RebusPuzzleData : ScriptableObject
+{
+    public string puzzleID;                    // "TP001", "TP002"
+    public Sprite rebusImage;                  // Visual puzzle
+    public string solution;                    // "UNITY", "TIME"
+    public string letterBank;                  // "UNITYWFVD", "TIMEXYZAB"
+    public List<DialogueLineData> CorrectDialogue;   // Multiple responses
+    public List<DialogueLineData> IncorrectDialogue; // Multiple responses
+    public Sprite humanSilhouetteForPuzzle;   // Pre-puzzle silhouette
+    public float destructionMeterChangeOnCorrect = -0.05f;
+    public float destructionMeterChangeOnIncorrect = 0.02f;
+}
+```
+
+#### **DialogueLineData.cs**
+```csharp
+[CreateAssetMenu(fileName = "NewDialogue", menuName = "Alien Probe/Dialogue Line")]
+public class DialogueLineData : ScriptableObject
+{
+    public Speaker characterSpeaking;          // Zorp, Xylar, Narrator
+    public string dialogueText;                // Character's response
+    public string live2DAnimationTrigger;      // "atack", "jump", "face01"
+    public AudioClip audioClip;                // Future voice acting
+}
+```
+
+### **Testing & Debug Tools (Implemented)**
+
+#### **LevelManagerEditor.cs**
+```csharp
+// Real-time testing interface
+[MenuItem("Alien Probe/Level Manager Editor")]
+public class LevelManagerEditor : EditorWindow
+{
+    // Runtime control panel
+    - Manual level navigation (Previous/Next/Load specific)
+    - Meter manipulation (destruction, alien relationships)
+    - Answer simulation (correct/incorrect testing)
+    - Progress reset and save state management
+}
+```
+
+#### **PuzzleTestUtility.cs**
+```csharp
+// Animation and dialogue testing
+[MenuItem("Alien Probe/Puzzle Test Utility")]
+public class PuzzleTestUtility : EditorWindow
+{
+    // Individual animation testing
+    - Zorp animations: atack, jump, walk, slide
+    - Xylar animations: face01, face02, body
+    - Dialogue sequence testing
+}
+```
+
+### **Save System (Implemented)**
+```csharp
+// Persistent progress using PlayerPrefs
+void SaveGameProgress()
+{
+    PlayerPrefs.SetInt("CurrentLevel", currentLevelIndex);
+    PlayerPrefs.SetFloat("DestructionMeter", destructionMeter);
+    PlayerPrefs.SetFloat("ZorpRespect", zorpRespectMeter);
+    PlayerPrefs.SetFloat("XylarCuriosity", xylarCuriosityMeter);
+}
+```
+
+### **Animation Integration (Implemented)**
+```csharp
+// Zorp Penguin Animations (Sprite-based)
+- penguin_idle.anim    → "idle" trigger
+- penguin_atack.anim   → "atack" trigger  
+- penguin_jump.anim    → "jump" trigger
+- penguin_walk.anim    → "walk" trigger
+- penguin_slide.anim   → "slide" trigger
+
+// Xylar Live2D Animations
+- face01, face02 → Facial expressions
+- body → Body movement animations
 ```
 
 ## 🎨 Visual & Audio Design
@@ -270,6 +414,53 @@ LevelManager:
 - **App Store Rating**: Target 4.5+ stars
 - **User Reviews**: Positive feedback on humor and gameplay
 - **Crash Rate**: Less than 1% crash rate
+
+## 🔧 Development Notes & Known Issues
+
+### **Fixed Issues (June 2025)**
+
+#### **Animation System Fixes**
+- ✅ **Fixed**: Animation trigger spelling mismatch - "attack" vs "atack" in penguin animations
+- ✅ **Fixed**: Animator Controller not assigned to Zorp penguin character
+- ✅ **Fixed**: Missing transitions between animation states
+
+#### **Level Progression Fixes**
+- ✅ **Fixed**: Game end condition triggered too early (after 1st level instead of last level)
+- ✅ **Fixed**: Automatic level transition blocked by `isTransitioning` flag during `LoadCurrentLevel()`
+- ✅ **Fixed**: Coroutine access issue - LevelManager calling PuzzleController coroutines incorrectly
+
+#### **System Integration Fixes**
+- ✅ **Fixed**: PuzzleController not receiving puzzles from LevelManager properly
+- ✅ **Fixed**: Console showing confusing 0-based level numbers vs user-friendly 1-based display
+- ✅ **Fixed**: Missing debug logging for transition troubleshooting
+
+### **Current Workflow for Adding New Puzzles**
+
+1. **Create RebusPuzzleData Asset**: `Assets → Create → Alien Probe → Rebus Puzzle`
+2. **Configure Puzzle**: Set puzzleID, solution, letterBank, rebusImage, silhouette
+3. **Create Dialogue Assets**: `Assets → Create → Alien Probe → Dialogue Line`
+4. **Assign Dialogues**: Add correct/incorrect dialogue lists to puzzle
+5. **Add to LevelManager**: Drag puzzle to `allPuzzles` array in LevelManager Inspector
+6. **Test**: Use Level Manager Editor to test progression and dialogue
+
+### **Debug Tools Usage**
+
+#### **Level Manager Editor** (`Alien Probe → Level Manager Editor`)
+- **Game State**: Monitor current level, destruction meter, alien relationships
+- **Level Controls**: Navigate between levels, test specific puzzles
+- **Meter Testing**: Simulate correct/incorrect answers and meter changes
+- **Quick Actions**: Reset progress, reload levels, force UI updates
+
+#### **Animation Testing**
+- **Individual Triggers**: Test Zorp animations (atack, jump, walk, slide)
+- **Dialogue Sequences**: Test multi-character conversations
+- **UI Feedback**: Verify destruction meter and relationship changes
+
+### **Performance Considerations**
+- **Memory Management**: Puzzle assets loaded on-demand, cleared between levels
+- **Animation Efficiency**: Sprite-based animations for Zorp, Live2D for Xylar
+- **UI Updates**: Smooth interpolation for meter changes to avoid jarring updates
+- **Save Frequency**: Progress saved after each level completion and on app pause
 
 ---
 
