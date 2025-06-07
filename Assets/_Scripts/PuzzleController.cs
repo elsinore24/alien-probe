@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro; // Added TextMeshPro support
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text; // Required for StringBuilder
@@ -15,9 +16,11 @@ public class PuzzleController : MonoBehaviour
     [Tooltip("Assign the CharacterDialogueManager (e.g., on Koharu).")]
     public CharacterDialogueManager characterDialogueManager;
 
-    [Header("Puzzle Display")]
-    [Tooltip("The UI Image element to display the rebus puzzle image.")]
-    public Image rebusDisplayImageUI;
+    [Header("TV Display")]
+    [Tooltip("The Image component within TV_Screen_Content_Area for displaying the rebus content.")]
+    public Image tvRebusContentDisplay;
+    [Tooltip("The Image component within TV_Screen_Content_Area for displaying silhouette content.")]
+    public Image tvSilhouetteDisplay;
 
     [Header("Puzzle UI Elements")]
     [Tooltip("Prefab for the letter tiles in the bank.")]
@@ -40,8 +43,15 @@ public class PuzzleController : MonoBehaviour
 
     private int currentAnswerIndex = 0;
 
+    [Header("Puzzle Sequence Timing")]
+    [Tooltip("Duration to show standby screen before silhouette appears.")]
+    public float standbyDuration = 2.0f;
+    [Tooltip("Duration to show silhouette before revealing rebus content.")]
+    public float silhouetteAppearDuration = 3.0f;
+
     void Start()
     {
+        Debug.Log("PuzzleController Start() called");
         if (currentPuzzle == null)
         {
             Debug.LogWarning("No puzzle asset assigned in Inspector. Attempting to create a test puzzle in code...");
@@ -49,7 +59,7 @@ public class PuzzleController : MonoBehaviour
         }
 
         if (characterDialogueManager == null)
-            characterDialogueManager = FindObjectOfType<CharacterDialogueManager>();
+            characterDialogueManager = FindFirstObjectByType<CharacterDialogueManager>();
         if (letterBankContainer == null)
             letterBankContainer = GameObject.Find("LetterBankContainer")?.transform;
         if (answerSlotsContainer == null)
@@ -59,6 +69,7 @@ public class PuzzleController : MonoBehaviour
         {
             clearButton.onClick.RemoveAllListeners();
             clearButton.onClick.AddListener(ClearAnswer);
+            Debug.Log("Clear button listener assigned");
         }
         else
         {
@@ -70,6 +81,7 @@ public class PuzzleController : MonoBehaviour
         {
             submitAnswerButton.onClick.RemoveAllListeners();
             submitAnswerButton.onClick.AddListener(ProcessPlayerAnswer);
+            Debug.Log("Submit answer button listener assigned");
         }
         else
         {
@@ -78,7 +90,7 @@ public class PuzzleController : MonoBehaviour
 
         if (currentPuzzle != null)
         {
-            SetupPuzzleUI(currentPuzzle);
+            StartCoroutine(SetupPuzzleUISequence(currentPuzzle));
         }
         else
         {
@@ -170,6 +182,7 @@ public class PuzzleController : MonoBehaviour
 
     public void OnLetterTileClicked(char letter, Button clickedButton)
     {
+        Debug.Log($"Letter tile clicked: {letter}");
         if (currentAnswerIndex < spawnedAnswerSlotTexts.Count)
         {
             Component textComponent = spawnedAnswerSlotTexts[currentAnswerIndex];
@@ -198,6 +211,7 @@ public class PuzzleController : MonoBehaviour
     // NEW METHOD: To process the player's answer
     public void ProcessPlayerAnswer()
     {
+        Debug.Log("ProcessPlayerAnswer() called");
         if (currentPuzzle == null)
         {
             Debug.LogError("ProcessPlayerAnswer: No current puzzle data!");
@@ -246,6 +260,53 @@ public class PuzzleController : MonoBehaviour
         }
     }
 
+    // NEW: Coroutine to handle the puzzle introduction sequence with silhouette
+    private IEnumerator SetupPuzzleUISequence(RebusPuzzleData puzzle)
+    {
+        if (puzzle == null) 
+        { 
+            Debug.LogError("SetupPuzzleUISequence: Null puzzle data."); 
+            yield break; 
+        }
+
+        currentPuzzle = puzzle;
+        ClearPuzzleUI();
+
+        // STAGE 1: Standby Screen - Hide both displays initially
+        Debug.Log("STAGE 1: Standby Screen");
+        if (tvRebusContentDisplay != null) tvRebusContentDisplay.gameObject.SetActive(false);
+        if (tvSilhouetteDisplay != null) tvSilhouetteDisplay.gameObject.SetActive(false); // INTENTIONALLY DEACTIVATED
+        
+        yield return new WaitForSeconds(standbyDuration);
+
+        // STAGE 2: Silhouette Appears
+        Debug.Log("STAGE 2: Silhouette Appears");
+        if (tvSilhouetteDisplay != null && currentPuzzle.humanSilhouetteForPuzzle != null)
+        {
+            Debug.Log("ACTIVATING Silhouette_Display with sprite: " + currentPuzzle.humanSilhouetteForPuzzle.name);
+            tvSilhouetteDisplay.sprite = currentPuzzle.humanSilhouetteForPuzzle;
+            tvSilhouetteDisplay.color = Color.white; 
+            tvSilhouetteDisplay.gameObject.SetActive(true); // SHOULD BE ACTIVATED HERE
+            if (tvRebusContentDisplay != null) tvRebusContentDisplay.gameObject.SetActive(false); 
+        }
+        else if (tvSilhouetteDisplay != null) 
+        {
+            // This block executes if currentPuzzle.humanSilhouetteForPuzzle IS NULL
+            Debug.LogWarning("No silhouette sprite for puzzle: " + currentPuzzle.puzzleID + ". Silhouette display will remain inactive.");
+            tvSilhouetteDisplay.gameObject.SetActive(false); // REMAINS/IS SET INACTIVE
+        }
+        else
+        {
+            Debug.LogError("tvSilhouetteDisplay is not assigned in the PuzzleController Inspector!");
+        }
+
+        yield return new WaitForSeconds(silhouetteAppearDuration);
+
+        // STAGE 3: Show Rebus Content and Setup Puzzle UI
+        Debug.Log("STAGE 3: Show Rebus Content");
+        SetupPuzzleUI(currentPuzzle);
+    }
+
     public void SetupPuzzleUI(RebusPuzzleData puzzle)
     {
         if (puzzle == null) { Debug.LogError("SetupPuzzleUI: Null puzzle data."); return; }
@@ -253,24 +314,31 @@ public class PuzzleController : MonoBehaviour
 
         ClearPuzzleUI();
 
-        // Handle rebus image display
-        if (rebusDisplayImageUI != null)
+        // Handle TV-based rebus image display
+        if (tvRebusContentDisplay != null)
         {
             if (currentPuzzle.rebusImage != null)
             {
-                rebusDisplayImageUI.sprite = currentPuzzle.rebusImage;
-                rebusDisplayImageUI.gameObject.SetActive(true); // Ensure it's visible
-                rebusDisplayImageUI.preserveAspect = true; // Maintain aspect ratio
+                tvRebusContentDisplay.sprite = currentPuzzle.rebusImage;
+                tvRebusContentDisplay.color = Color.white;
+                tvRebusContentDisplay.gameObject.SetActive(true);
+                tvRebusContentDisplay.preserveAspect = true; // Maintain aspect ratio
+                
+                // Hide silhouette when showing rebus content
+                if (tvSilhouetteDisplay != null) 
+                {
+                    tvSilhouetteDisplay.gameObject.SetActive(false);
+                }
             }
             else
             {
-                rebusDisplayImageUI.gameObject.SetActive(false); 
+                tvRebusContentDisplay.gameObject.SetActive(false); 
                 Debug.LogWarning("SetupPuzzleUI: currentPuzzle.rebusImage is null for puzzle: " + (currentPuzzle != null ? currentPuzzle.puzzleID : "UNKNOWN"));
             }
         }
         else
         {
-            Debug.LogError("SetupPuzzleUI: rebusDisplayImageUI is not assigned in the Inspector!");
+            Debug.LogError("SetupPuzzleUI: tvRebusContentDisplay is not assigned in the Inspector!");
         }
 
         if (!string.IsNullOrEmpty(puzzle.letterBank) && letterBankContainer != null)
@@ -307,6 +375,7 @@ public class PuzzleController : MonoBehaviour
 
     public void ClearAnswer()
     {
+        Debug.Log("ClearAnswer() called");
         foreach (Component textComponent in spawnedAnswerSlotTexts)
         {
             if (textComponent is Text legacyText && legacyText != null)

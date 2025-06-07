@@ -7,8 +7,12 @@ using UnityEngine.InputSystem; // Required for new Input System
 public class CharacterDialogueManager : MonoBehaviour
 {
     [Header("Character Components")]
-    [Tooltip("The Animator for the character (e.g., Koharu).")]
-    public Animator characterAnimator;
+    [Tooltip("The Animator for Koharu character (Live2D).")]
+    public Animator koharuAnimator;
+    [Tooltip("The Animator for Zorp character (Penguin).")]
+    public Animator zorpAnimator;
+    [Tooltip("The Animator for Xylar character (Live2D).")]
+    public Animator xylarAnimator;
 
     [Header("UI Elements")]
     [Tooltip("The UI Text element to display the dialogue.")]
@@ -27,17 +31,43 @@ public class CharacterDialogueManager : MonoBehaviour
     {
         Debug.Log("CharacterDialogueManager Start() called!");
         
-        // Auto-find components if not assigned
-        if (characterAnimator == null)
+        // Auto-find character animators if not assigned
+        if (koharuAnimator == null)
         {
-            characterAnimator = FindObjectOfType<Animator>();
-            if (characterAnimator != null)
+            GameObject koharuGO = GameObject.Find("Koharu");
+            if (koharuGO != null)
             {
-                Debug.Log("CharacterDialogueManager: Auto-found Character Animator: " + characterAnimator.name);
+                koharuAnimator = koharuGO.GetComponent<Animator>();
+                if (koharuAnimator != null)
+                {
+                    Debug.Log("CharacterDialogueManager: Auto-found Koharu Animator");
+                }
             }
-            else
+        }
+        
+        if (zorpAnimator == null)
+        {
+            GameObject zorpGO = GameObject.Find("Zorp_Character_Penguin");
+            if (zorpGO != null)
             {
-                Debug.LogWarning("CharacterDialogueManager: Character Animator is not assigned and could not be auto-found!");
+                zorpAnimator = zorpGO.GetComponent<Animator>();
+                if (zorpAnimator != null)
+                {
+                    Debug.Log("CharacterDialogueManager: Auto-found Zorp Penguin Animator");
+                }
+            }
+        }
+        
+        if (xylarAnimator == null)
+        {
+            GameObject xylarGO = GameObject.Find("Xylar_Character");
+            if (xylarGO != null)
+            {
+                xylarAnimator = xylarGO.GetComponent<Animator>();
+                if (xylarAnimator != null)
+                {
+                    Debug.Log("CharacterDialogueManager: Auto-found Xylar Animator");
+                }
             }
         }
         
@@ -115,15 +145,16 @@ public class CharacterDialogueManager : MonoBehaviour
         testLine2.live2DAnimationTrigger = "face01";
         currentConversation.Add(testLine2);
         
-        // Test dialogue 3
+        // Test dialogue 3 - Updated for penguin Zorp
         DialogueLineData testLine3 = ScriptableObject.CreateInstance<DialogueLineData>();
         testLine3.characterSpeaking = Speaker.Zorp;
-        testLine3.dialogueText = "All systems are functioning correctly!";
-        testLine3.live2DAnimationTrigger = "face02";
+        testLine3.dialogueText = "ATTACK! The penguin alien has arrived! Prepare for chaos!";
+        testLine3.live2DAnimationTrigger = "attack";
         currentConversation.Add(testLine3);
         
         Debug.Log("CharacterDialogueManager: Created test conversation with " + currentConversation.Count + " lines");
     }
+    
     void Update()
     {
         // Check for input to advance dialogue using new Input System
@@ -201,26 +232,47 @@ public class CharacterDialogueManager : MonoBehaviour
             characterNameTextUI.gameObject.SetActive(true); // Ensure it's visible
         }
 
-        // --- MODIFIED SECTION FOR ANIMATION ---
-        // Trigger the Live2D animation
+        // --- ENHANCED SECTION FOR MULTIPLE CHARACTER ANIMATIONS ---
+        // Trigger the appropriate character animation based on speaker
         if (!string.IsNullOrEmpty(dialogueLine.live2DAnimationTrigger))
         {
-            if (characterAnimator != null) // Ensure animator is still valid
+            Animator targetAnimator = GetAnimatorForSpeaker(dialogueLine.characterSpeaking);
+            
+            if (targetAnimator != null)
             {
-               // RE-ENABLED: Actually trigger the animation
-               characterAnimator.SetTrigger(dialogueLine.live2DAnimationTrigger);
-               Debug.Log($"Played animation trigger: {dialogueLine.live2DAnimationTrigger}");
+               // Trigger the animation on the appropriate character
+               targetAnimator.SetTrigger(dialogueLine.live2DAnimationTrigger);
+               Debug.Log($"Played animation trigger '{dialogueLine.live2DAnimationTrigger}' on {dialogueLine.characterSpeaking}");
             }
             else
             {
-                Debug.LogError("CharacterAnimator is null, cannot play animation trigger.");
+                Debug.LogWarning($"No animator found for character: {dialogueLine.characterSpeaking}");
             }
         }
         else
         {
             Debug.LogWarning("DisplayCurrentDialogueLine: No Live2DAnimationTrigger specified in DialogueLineData.");
         }
-        // --- END MODIFIED SECTION ---
+        // --- END ENHANCED SECTION ---
+    }
+
+    // NEW METHOD: Get the appropriate animator for each character
+    Animator GetAnimatorForSpeaker(Speaker speaker)
+    {
+        switch (speaker)
+        {
+            case Speaker.Xylar:
+                return xylarAnimator;
+            case Speaker.Zorp:
+                return zorpAnimator;
+            case Speaker.Narrator:
+            case Speaker.HumanInternalMonologue:
+                // Use Koharu for narrator and human thoughts
+                return koharuAnimator;
+            default:
+                Debug.LogWarning($"Unknown speaker: {speaker}");
+                return koharuAnimator; // Fallback to Koharu
+        }
     }
 
     void EndConversation()

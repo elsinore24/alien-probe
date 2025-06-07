@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep:*)",
+      "Bash(find:*)",
+      "mcp__sequential-thinking__sequentialthinking",
+      "Bash(echo $HOME)",
+      "mcp__desktop-commander__list_directory",
+      "mcp__desktop-commander__read_file",
+      "Bash(ls:*)"
+    ],
+    "deny": []
+  }
+}

@@ -24,6 +24,8 @@ public class RebusPuzzleData : ScriptableObject
     public string incorrectBanterKey; // Key to find incorrect dialogue line
 
     [Header("Human Reaction")]
+    [Tooltip("The silhouette sprite to display during the puzzle introduction sequence.")]
+    public Sprite humanSilhouetteForPuzzle; // Silhouette shown during introduction
     public Sprite humanSilhouetteReaction; // Optional: Specific silhouette change for this puzzle
     public float destructionMeterChangeOnCorrect; // e.g., -0.1 (decrease)
     public float destructionMeterChangeOnIncorrect; // e.g., +0.05 (increase)
