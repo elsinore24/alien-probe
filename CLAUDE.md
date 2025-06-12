@@ -50,7 +50,7 @@ When starting a new conversation, always:
 - Auto-advance dialogue (configurable delay, default 2.5s)
 - Auto-discovery of character animators via GameObject.Find()
 - Character-specific animators:
-  - Xylar: 6 expressions (Neutral, Happy, Surprised, Thinking, Concerned, Excited)
+  - Xylar: 6 expressions (Neutral, Happy, Surprised, Thinking, Concerned, Excited) + 3 idle animations
   - Zorp: penguin animations (jump, walk, slide, atack)
 
 ### Level Manager (LevelManager.cs)
@@ -130,7 +130,7 @@ When starting a new conversation, always:
 
 ## Notes
 - Project uses new Input System
-- Live2D models: Koharu (test), Mao (test)
+- Moved from Live2D to PNG sequence animations for simpler implementation
 - TV screen uses mask system for content display
 - Effects overlay uses custom shader material
 - Unity MCP Bridge shows "Could not find Python directory" warning but works via Claude Desktop
