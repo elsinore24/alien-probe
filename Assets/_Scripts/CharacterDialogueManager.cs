@@ -19,6 +19,10 @@ public class CharacterDialogueManager : MonoBehaviour
     public Text dialogueTextUI; // For TextMeshPro: public TextMeshProUGUI dialogueTextUI;
     [Tooltip("The UI Text element to display the character's name.")] // ADDED
     public Text characterNameTextUI; // ADDED. For TextMeshPro: public TextMeshProUGUI characterNameTextUI;
+    
+    [Header("Dialogue Settings")]
+    [Tooltip("Automatically advance to next dialogue after this delay (0 = manual advance)")]
+    public float autoAdvanceDelay = 2.5f;
 
     [Header("Dialogue Conversation")]
     [Tooltip("Assign a list of DialogueLineData ScriptableObjects here for a conversation.")]
@@ -26,6 +30,7 @@ public class CharacterDialogueManager : MonoBehaviour
 
     private int currentDialogueIndex = 0;
     private bool isConversationActive = false;
+    private Coroutine autoAdvanceCoroutine;
 
     void Start()
     {
@@ -175,6 +180,19 @@ public class CharacterDialogueManager : MonoBehaviour
             return;
         }
 
+        Debug.Log($"=== StartConversation: Starting with {conversation.Count} dialogue lines ===");
+        for (int i = 0; i < conversation.Count; i++)
+        {
+            if (conversation[i] != null)
+            {
+                Debug.Log($"  [{i}] Speaker: {conversation[i].characterSpeaking}, Text: '{conversation[i].dialogueText.Substring(0, Mathf.Min(50, conversation[i].dialogueText.Length))}...', Animation: '{conversation[i].live2DAnimationTrigger}'");
+            }
+            else
+            {
+                Debug.LogError($"  [{i}] NULL DialogueLineData!");
+            }
+        }
+
         currentConversation = conversation;
         currentDialogueIndex = 0;
         isConversationActive = true;
@@ -184,6 +202,7 @@ public class CharacterDialogueManager : MonoBehaviour
     void AdvanceDialogue()
     {
         currentDialogueIndex++;
+        Debug.Log($"AdvanceDialogue: Moving to index {currentDialogueIndex} of {currentConversation.Count}");
         if (currentDialogueIndex < currentConversation.Count)
         {
             DisplayCurrentDialogueLine();
@@ -196,6 +215,8 @@ public class CharacterDialogueManager : MonoBehaviour
 
     void DisplayCurrentDialogueLine()
     {
+        Debug.Log($"DisplayCurrentDialogueLine called. Index: {currentDialogueIndex}, Conversation count: {currentConversation?.Count ?? 0}");
+        
         if (currentConversation == null || currentDialogueIndex >= currentConversation.Count)
         {
             Debug.LogError("DisplayCurrentDialogueLine: Invalid state or index.");
@@ -204,6 +225,7 @@ public class CharacterDialogueManager : MonoBehaviour
         }
 
         DialogueLineData dialogueLine = currentConversation[currentDialogueIndex];
+        Debug.Log($"DialogueLine retrieved: {dialogueLine?.name ?? "null"}");
 
         if (dialogueLine == null)
         {
@@ -234,19 +256,24 @@ public class CharacterDialogueManager : MonoBehaviour
 
         // --- ENHANCED SECTION FOR MULTIPLE CHARACTER ANIMATIONS ---
         // Trigger the appropriate character animation based on speaker
+        Debug.Log($"Character speaking: {dialogueLine.characterSpeaking}, Animation trigger: '{dialogueLine.live2DAnimationTrigger}' (length: {dialogueLine.live2DAnimationTrigger?.Length ?? 0})");
+        
         if (!string.IsNullOrEmpty(dialogueLine.live2DAnimationTrigger))
         {
             Animator targetAnimator = GetAnimatorForSpeaker(dialogueLine.characterSpeaking);
+            Debug.Log($"Got animator for {dialogueLine.characterSpeaking}: {targetAnimator != null} (GameObject: {targetAnimator?.gameObject.name ?? "null"})");
             
             if (targetAnimator != null)
             {
                // Trigger the animation on the appropriate character
                targetAnimator.SetTrigger(dialogueLine.live2DAnimationTrigger);
                Debug.Log($"Played animation trigger '{dialogueLine.live2DAnimationTrigger}' on {dialogueLine.characterSpeaking}");
+               Debug.Log($"Animator name: {targetAnimator.gameObject.name}, enabled: {targetAnimator.enabled}");
             }
             else
             {
                 Debug.LogWarning($"No animator found for character: {dialogueLine.characterSpeaking}");
+                Debug.LogWarning($"xylarAnimator is null: {xylarAnimator == null}");
             }
         }
         else
@@ -254,6 +281,25 @@ public class CharacterDialogueManager : MonoBehaviour
             Debug.LogWarning("DisplayCurrentDialogueLine: No Live2DAnimationTrigger specified in DialogueLineData.");
         }
         // --- END ENHANCED SECTION ---
+        
+        // Start auto-advance if enabled
+        if (autoAdvanceDelay > 0)
+        {
+            if (autoAdvanceCoroutine != null)
+                StopCoroutine(autoAdvanceCoroutine);
+            
+            autoAdvanceCoroutine = StartCoroutine(AutoAdvanceDialogue());
+        }
+    }
+    
+    System.Collections.IEnumerator AutoAdvanceDialogue()
+    {
+        yield return new WaitForSeconds(autoAdvanceDelay);
+        
+        if (isConversationActive)
+        {
+            AdvanceDialogue();
+        }
     }
 
     // NEW METHOD: Get the appropriate animator for each character
@@ -278,15 +324,23 @@ public class CharacterDialogueManager : MonoBehaviour
     void EndConversation()
     {
         isConversationActive = false;
+        
+        // Stop auto-advance if running
+        if (autoAdvanceCoroutine != null)
+        {
+            StopCoroutine(autoAdvanceCoroutine);
+            autoAdvanceCoroutine = null;
+        }
+        
         if (dialogueTextUI != null)
         {
-            dialogueTextUI.text = "End of conversation. Press space to restart.";
+            dialogueTextUI.text = "";
         }
         if (characterNameTextUI != null) // MODIFIED: Clear name text
         {
             characterNameTextUI.text = "";
         }
-        Debug.Log("Conversation ended.");
+        Debug.Log("=== Conversation ended ===");
     }
 
     public void TriggerConversation(List<DialogueLineData> conversation)

@@ -14,6 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   dialogueKey: Xylar_Incorrect_Analysis
   characterSpeaking: 0
-  dialogueText: Fascinating! The human's neural pathways appear to be experiencing a critical malfunction. Note how they completely misinterpreted the symbolic representation. This will make an excellent footnote in my dissertation on primitive cognition.
+  dialogueText: Fascinating! The human's neural pathways appear to be experiencing
+    a critical malfunction. Note how they completely misinterpreted the symbolic
+    representation. This will make an excellent footnote in my dissertation on primitive
+    cognition.
   audioClip: {fileID: 0}
-  live2DAnimationTrigger: body
+  live2DAnimationTrigger: Thinking

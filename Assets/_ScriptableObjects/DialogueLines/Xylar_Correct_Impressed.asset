@@ -14,6 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   dialogueKey: Xylar_Correct_Impressed
   characterSpeaking: 0
-  dialogueText: Remarkable! The specimen successfully decoded our carefully constructed visual cipher. Perhaps these humans possess more sophisticated pattern recognition capabilities than our initial probes indicated. I must recalibrate my hypotheses!
+  dialogueText: Remarkable! The specimen successfully decoded our carefully constructed
+    visual cipher. Perhaps these humans possess more sophisticated pattern recognition
+    capabilities than our initial probes indicated. I must recalibrate my hypotheses!
   audioClip: {fileID: 0}
-  live2DAnimationTrigger: face02
+  live2DAnimationTrigger: Surprised

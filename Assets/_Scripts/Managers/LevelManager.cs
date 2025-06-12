@@ -4,11 +4,22 @@ using System.Collections;
 
 public class LevelManager : MonoBehaviour
 {
-    [Header("Level Progression")]
+    [Header("Puzzle System Selection")]
+    [Tooltip("Use new randomized puzzle pool system instead of linear progression")]
+    public bool useRandomizedPuzzlePool = false;
+    [Tooltip("Reference to the puzzle pool manager (for randomized system)")]
+    public SimplePuzzlePoolManager poolManager;
+    
+    [Header("Linear Progression (Legacy)")]
     [Tooltip("Ordered list of all puzzles in the game")]
+    [HideInInspector] // Hidden to prevent Unity editor bugs
     public List<RebusPuzzleData> allPuzzles = new List<RebusPuzzleData>();
     [Tooltip("Current level index (0-based)")]
     public int currentLevelIndex = 0;
+    
+    [Header("Current Puzzle Set (Randomized System)")]
+    private PersonPuzzleSet currentSet;
+    private int currentPuzzleIndexInSet;
     
     [Header("Game State")]
     [Tooltip("Earth's destruction level (0-100%)")]
@@ -83,9 +94,38 @@ public class LevelManager : MonoBehaviour
             puzzleController = FindFirstObjectByType<PuzzleController>();
         if (dialogueManager == null)
             dialogueManager = FindFirstObjectByType<CharacterDialogueManager>();
+        if (poolManager == null)
+            poolManager = FindFirstObjectByType<SimplePuzzlePoolManager>();
             
         LoadGameProgress();
         
+        if (useRandomizedPuzzlePool)
+        {
+            if (poolManager != null)
+            {
+                Debug.Log("LevelManager: Using randomized puzzle pool system");
+                // Clear legacy system data to prevent conflicts
+                allPuzzles.Clear();
+                currentLevelIndex = 0;
+                StartNewPersonSet();
+            }
+            else
+            {
+                Debug.LogError("LevelManager: Randomized puzzle pool enabled but no SimplePuzzlePoolManager found!");
+                Debug.LogError("Please add SimplePuzzlePoolManager to the scene or disable randomized puzzle pool.");
+                useRandomizedPuzzlePool = false;
+                InitializeLegacySystem();
+            }
+        }
+        else
+        {
+            Debug.Log("LevelManager: Using legacy linear progression system");
+            InitializeLegacySystem();
+        }
+    }
+    
+    void InitializeLegacySystem()
+    {
         if (allPuzzles.Count > 0)
         {
             LoadCurrentLevel();
@@ -95,7 +135,6 @@ public class LevelManager : MonoBehaviour
             Debug.LogWarning("LevelManager: No puzzles assigned! Please add puzzles to the allPuzzles list in the Inspector.");
             Debug.LogWarning("Available puzzles in project: TestPuzzle_001, TestPuzzle_002");
             
-            // Try to auto-find and load test puzzles
             TryLoadTestPuzzles();
         }
     }
@@ -161,12 +200,29 @@ public class LevelManager : MonoBehaviour
         
         if (!isGameOver)
         {
-            Debug.Log("Starting transition to next level...");
-            StartCoroutine(TransitionToNextLevel());
+            if (wasCorrect)
+            {
+                if (useRandomizedPuzzlePool)
+                {
+                    Debug.Log("Correct answer! Loading next puzzle from set...");
+                    StartCoroutine(DelayedNextPuzzle());
+                }
+                else
+                {
+                    Debug.Log("Correct answer! Starting transition to next level...");
+                    StartCoroutine(TransitionToNextLevel());
+                }
+            }
+            else
+            {
+                Debug.Log("Incorrect answer. Player can retry the current puzzle.");
+                // The puzzle remains loaded, player can try again
+                // Destruction meter was already updated in OnIncorrectAnswer
+            }
         }
         else
         {
-            Debug.LogWarning("OnPuzzleCompleted: Not transitioning because game is over");
+            Debug.LogWarning("OnPuzzleCompleted: Game is over due to destruction threshold");
         }
     }
     
@@ -274,11 +330,14 @@ public class LevelManager : MonoBehaviour
         {
             TriggerGameEnd(GameEnding.Destruction);
         }
-        else if (currentLevelIndex >= allPuzzles.Count)
+        else if (!useRandomizedPuzzlePool && currentLevelIndex >= allPuzzles.Count)
         {
+            // Only check linear progression end condition when using linear system
             GameEnding ending = DetermineVictoryEnding();
             TriggerGameEnd(ending);
         }
+        // For pool system, game end conditions are handled differently
+        // (e.g., when all PersonPuzzleSets are completed multiple times)
     }
     
     GameEnding DetermineVictoryEnding()
@@ -377,11 +436,22 @@ public class LevelManager : MonoBehaviour
     
     public RebusPuzzleData GetCurrentPuzzle()
     {
-        if (currentLevelIndex >= 0 && currentLevelIndex < allPuzzles.Count)
+        if (useRandomizedPuzzlePool)
         {
-            return allPuzzles[currentLevelIndex];
+            if (currentSet != null && currentPuzzleIndexInSet > 0 && currentPuzzleIndexInSet <= currentSet.puzzles.Count)
+            {
+                return currentSet.puzzles[currentPuzzleIndexInSet - 1];
+            }
+            return null;
         }
-        return null;
+        else
+        {
+            if (currentLevelIndex >= 0 && currentLevelIndex < allPuzzles.Count)
+            {
+                return allPuzzles[currentLevelIndex];
+            }
+            return null;
+        }
     }
     
     public string GetCategoryDescription()
@@ -433,8 +503,104 @@ public class LevelManager : MonoBehaviour
         zorpRespectMeter = 0f;
         xylarCuriosityMeter = 25f;
         isGameOver = false;
+        
+        if (useRandomizedPuzzlePool && poolManager != null)
+        {
+            poolManager.ResetAllSets();
+        }
+        
         SaveGameProgress();
         Debug.Log("Game progress reset!");
+    }
+    
+    public void StartNewPersonSet()
+    {
+        if (poolManager == null)
+        {
+            Debug.LogError("StartNewPersonSet: poolManager is null!");
+            return;
+        }
+        
+        currentSet = poolManager.GetNextSet();
+        currentPuzzleIndexInSet = 0;
+        
+        if (currentSet == null)
+        {
+            Debug.LogError("StartNewPersonSet: No puzzle set returned from pool manager!");
+            return;
+        }
+        
+        Debug.Log($"Starting new person set: {currentSet.setID} ({currentSet.internalName})");
+        
+        if (puzzleController != null && currentSet.silhouette != null)
+        {
+            puzzleController.ShowSilhouette(currentSet.silhouette);
+        }
+        
+        StartCoroutine(DelayedPuzzleLoad(2f));
+    }
+    
+    IEnumerator DelayedPuzzleLoad(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        LoadNextPuzzleFromSet();
+    }
+    
+    void LoadNextPuzzleFromSet()
+    {
+        if (currentSet == null)
+        {
+            Debug.LogError("LoadNextPuzzleFromSet: currentSet is null!");
+            return;
+        }
+        
+        if (currentPuzzleIndexInSet >= currentSet.puzzles.Count)
+        {
+            Debug.Log($"Completed set: {currentSet.setID}");
+            poolManager.MarkSetAsPlayed(currentSet);
+            
+            StartCoroutine(TransitionToNewSet());
+            return;
+        }
+        
+        var puzzle = currentSet.puzzles[currentPuzzleIndexInSet];
+        if (puzzle == null)
+        {
+            Debug.LogError($"LoadNextPuzzleFromSet: Puzzle {currentPuzzleIndexInSet} in set {currentSet.setID} is null!");
+            currentPuzzleIndexInSet++;
+            LoadNextPuzzleFromSet();
+            return;
+        }
+        
+        Debug.Log($"Loading puzzle {currentPuzzleIndexInSet + 1}/{currentSet.puzzles.Count} from set {currentSet.setID}: {puzzle.solution}");
+        
+        if (puzzleController != null)
+        {
+            puzzleController.LoadPuzzleFromLevelManager(puzzle);
+        }
+        
+        currentPuzzleIndexInSet++;
+    }
+    
+    IEnumerator TransitionToNewSet()
+    {
+        if (dialogueManager != null)
+        {
+            Debug.Log("Playing alien conclusion dialogue...");
+        }
+        
+        yield return new WaitForSeconds(3f);
+        
+        if (!isGameOver)
+        {
+            StartNewPersonSet();
+        }
+    }
+    
+    IEnumerator DelayedNextPuzzle()
+    {
+        yield return new WaitForSeconds(3f);
+        LoadNextPuzzleFromSet();
     }
     
     void TryLoadTestPuzzles()

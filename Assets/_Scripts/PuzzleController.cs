@@ -11,6 +11,9 @@ public class PuzzleController : MonoBehaviour
     [Header("Puzzle Data")]
     [Tooltip("Assign the current PuzzleData ScriptableObject here.")]
     public RebusPuzzleData currentPuzzle;
+    
+    // Public getter for current puzzle
+    public RebusPuzzleData GetCurrentPuzzle() => currentPuzzle;
 
     [Header("Dialogue System")]
     [Tooltip("Assign the CharacterDialogueManager (e.g., on Koharu).")]
@@ -43,6 +46,10 @@ public class PuzzleController : MonoBehaviour
 
     private int currentAnswerIndex = 0;
 
+    [Header("Character Controllers")]
+    [Tooltip("Reference to Xylar's idle animation controller.")]
+    public XylarIdleController xylarIdleController;
+
     [Header("Puzzle Sequence Timing")]
     [Tooltip("Duration to show standby screen before silhouette appears.")]
     public float standbyDuration = 2.0f;
@@ -56,6 +63,21 @@ public class PuzzleController : MonoBehaviour
         // Initialize references
         if (characterDialogueManager == null)
             characterDialogueManager = FindFirstObjectByType<CharacterDialogueManager>();
+        
+        // Auto-find XylarIdleController if not assigned
+        if (xylarIdleController == null)
+        {
+            GameObject xylarGO = GameObject.Find("Xylar_Character");
+            if (xylarGO != null)
+            {
+                xylarIdleController = xylarGO.GetComponent<XylarIdleController>();
+                if (xylarIdleController == null)
+                {
+                    xylarIdleController = xylarGO.AddComponent<XylarIdleController>();
+                    Debug.Log("PuzzleController: Added XylarIdleController component to Xylar_Character");
+                }
+            }
+        }
         if (letterBankContainer == null)
             letterBankContainer = GameObject.Find("LetterBankContainer")?.transform;
         if (answerSlotsContainer == null)
@@ -295,6 +317,12 @@ public class PuzzleController : MonoBehaviour
         // STAGE 3: Show Rebus Content and Setup Puzzle UI
         Debug.Log("STAGE 3: Show Rebus Content");
         SetupPuzzleUI(currentPuzzle);
+        
+        // Start idle animations when puzzle is ready
+        if (xylarIdleController != null)
+        {
+            xylarIdleController.StartIdleAnimations();
+        }
     }
 
     public void SetupPuzzleUI(RebusPuzzleData puzzle)
@@ -390,10 +418,19 @@ public class PuzzleController : MonoBehaviour
     public void SubmitCorrectAnswer()
     {
         if (currentPuzzle == null || characterDialogueManager == null) return;
+        Debug.Log("=== SubmitCorrectAnswer called ===");
         Debug.Log("Correct answer submitted for puzzle: " + currentPuzzle.name);
+        Debug.Log($"CorrectDialogue count: {currentPuzzle.CorrectDialogue?.Count ?? 0}");
+        
+        // Stop idle animations during dialogue
+        if (xylarIdleController != null)
+        {
+            xylarIdleController.StopIdleAnimations();
+        }
         
         if (currentPuzzle.CorrectDialogue != null && currentPuzzle.CorrectDialogue.Count > 0)
         {
+            Debug.Log("Starting correct dialogue conversation...");
             characterDialogueManager.StartConversation(currentPuzzle.CorrectDialogue);
         }
         else
@@ -403,6 +440,7 @@ public class PuzzleController : MonoBehaviour
         
         if (LevelManager.Instance != null)
         {
+            Debug.Log("Notifying LevelManager of puzzle completion...");
             LevelManager.Instance.OnPuzzleCompleted(true);
         }
     }
@@ -411,6 +449,12 @@ public class PuzzleController : MonoBehaviour
     {
         if (currentPuzzle == null || characterDialogueManager == null) return;
         Debug.Log("Incorrect answer submitted for puzzle: " + currentPuzzle.name);
+        
+        // Stop idle animations during dialogue
+        if (xylarIdleController != null)
+        {
+            xylarIdleController.StopIdleAnimations();
+        }
         
         if (currentPuzzle.IncorrectDialogue != null && currentPuzzle.IncorrectDialogue.Count > 0)
         {
@@ -425,6 +469,25 @@ public class PuzzleController : MonoBehaviour
         {
             LevelManager.Instance.OnPuzzleCompleted(false);
         }
+        
+        // Clear the answer slots so player can try again
+        StartCoroutine(ResetPuzzleAfterIncorrect());
+    }
+    
+    private IEnumerator ResetPuzzleAfterIncorrect()
+    {
+        // Wait for dialogue to finish (adjust timing as needed)
+        yield return new WaitForSeconds(3f);
+        
+        // Clear the answer but keep the puzzle loaded
+        ClearAnswer();
+        Debug.Log("Puzzle reset. Player can try again.");
+        
+        // Restart idle animations after reset
+        if (xylarIdleController != null)
+        {
+            xylarIdleController.StartIdleAnimations();
+        }
     }
     
     public void LoadPuzzleFromLevelManager(RebusPuzzleData puzzle)
@@ -438,5 +501,33 @@ public class PuzzleController : MonoBehaviour
         Debug.Log($"PuzzleController: Received puzzle {puzzle.puzzleID} from LevelManager");
         currentPuzzle = puzzle;
         StartCoroutine(SetupPuzzleUISequence(puzzle));
+    }
+    
+    public void ShowSilhouette(Sprite silhouette)
+    {
+        if (silhouette == null)
+        {
+            Debug.LogWarning("ShowSilhouette: Received null silhouette sprite");
+            return;
+        }
+        
+        Debug.Log("PuzzleController: Showing person silhouette");
+        
+        if (tvSilhouetteDisplay != null)
+        {
+            tvSilhouetteDisplay.sprite = silhouette;
+            tvSilhouetteDisplay.gameObject.SetActive(true);
+        }
+        else
+        {
+            Debug.LogWarning("ShowSilhouette: tvSilhouetteDisplay is not assigned!");
+        }
+        
+        if (tvRebusContentDisplay != null)
+        {
+            tvRebusContentDisplay.gameObject.SetActive(false);
+        }
+        
+        ClearPuzzleUI();
     }
 }
