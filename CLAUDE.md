@@ -87,6 +87,7 @@ When starting a new conversation, always:
 - Main Scene: Assets/_Scenes/MainGameScene.unity
 - Puzzle Controller: Assets/_Scripts/PuzzleController.cs
 - Dialogue Manager: Assets/_Scripts/CharacterDialogueManager.cs
+- Idle Controller: Assets/_Scripts/XylarIdleController.cs
 - Level Manager: Assets/_Scripts/Managers/LevelManager.cs
 - Pool Manager: Assets/_Scripts/Managers/SimplePuzzlePoolManager.cs
 - Puzzle Data: Assets/_ScriptableObjects/RebusPuzzles/
